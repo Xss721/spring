@@ -68,7 +68,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory {
 
 	/**
-	 * Parent bean factory, for bean inheritance support.
+	 * Parent bean factory, for bean inheritance support.父bean工厂，用于支持bean继承。
 	 */
 	@Nullable
 	private BeanFactory parentBeanFactory;
@@ -97,23 +97,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private BeanExpressionResolver beanExpressionResolver;
 
 	/**
-	 * Spring ConversionService to use instead of PropertyEditors.
+	 * Spring ConversionService(转换服务) to use instead of PropertyEditors.
 	 */
 	@Nullable
 	private ConversionService conversionService;
 
 	/**
-	 * Custom PropertyEditorRegistrars to apply to the beans of this factory.
+	 * Custom自定义 PropertyEditorRegistrars(属性编辑器注册) to apply to the beans of this factory.
 	 */
 	private final Set<PropertyEditorRegistrar> propertyEditorRegistrars = new LinkedHashSet<>(4);
 
 	/**
-	 * Custom PropertyEditors to apply to the beans of this factory.
+	 * Custom自定义 PropertyEditors to apply to the beans of this factory.
 	 */
 	private final Map<Class<?>, Class<? extends PropertyEditor>> customEditors = new HashMap<>(4);
 
 	/**
-	 * A custom TypeConverter to use, overriding the default PropertyEditor mechanism.
+	 * A custom TypeConverter类型转换器 to use, overriding the default PropertyEditor mechanism.
 	 */
 	@Nullable
 	private TypeConverter typeConverter;
@@ -124,16 +124,18 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final List<StringValueResolver> embeddedValueResolvers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * BeanPostProcessors to apply in createBean.
+	 * BeanPostProcessors bean后置处理器to apply in createBean.
 	 */
 	private final List<BeanPostProcessor> beanPostProcessors = new CopyOnWriteArrayList<>();
 
 	/**
-	 * Indicates whether any InstantiationAwareBeanPostProcessors have been registered.
+	 * 表明是否有一些后置bean后置处理器被注册进入
+	 * Indicates表明 whether any InstantiationAwareBeanPostProcessors have been registered.
 	 */
 	private volatile boolean hasInstantiationAwareBeanPostProcessors;
 
 	/**
+	 * 表明是否有DestructionAwareBeanPostProcessors被注册进入
 	 * Indicates whether any DestructionAwareBeanPostProcessors have been registered.
 	 */
 	private volatile boolean hasDestructionAwareBeanPostProcessors;
@@ -144,22 +146,26 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final Map<String, Scope> scopes = new LinkedHashMap<>(8);
 
 	/**
+	 * 与SecurityManager一起运行时使用的安全上下文。
 	 * Security context used when running with a SecurityManager.
 	 */
 	@Nullable
 	private SecurityContextProvider securityContextProvider;
 
 	/**
+	 * 从bean名称映射到合并的RootBeanDefinition。
 	 * Map from bean name to merged RootBeanDefinition.
 	 */
 	private final Map<String, RootBeanDefinition> mergedBeanDefinitions = new ConcurrentHashMap<>(256);
 
 	/**
+	 * 至少被创建了一次的bean的名字
 	 * Names of beans that have already been created at least once.
 	 */
 	private final Set<String> alreadyCreated = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
 	/**
+	 * 当前正在创建的bean的名称。
 	 * Names of beans that are currently in creation.
 	 */
 	private final ThreadLocal<Object> prototypesCurrentlyInCreation =
@@ -219,13 +225,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	/**
+	 * 返回指定bean的实例，该实例可以是共享的，也可以是独立的。
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 *
-	 * @param name          the name of the bean to retrieve
-	 * @param requiredType  the required type of the bean to retrieve
-	 * @param args          arguments to use when creating a bean instance using explicit arguments
+	 * @param name          the name of the bean to retrieve检索
+	 * @param requiredType  the required type of the bean to retrieve要检索的bean所需的类型
+	 * @param args          arguments to use when creating a bean instance using explicit arguments在使用显式参数创建bean实例时使用的参数
 	 *                      (only applied when creating a new instance as opposed to retrieving an existing one)
-	 * @param typeCheckOnly whether the instance is obtained for a type check,
+	 * @param typeCheckOnly whether the instance is obtained for a type check,实例是否用于类型检查，而不是实际使用
 	 *                      not for actual use
 	 * @return an instance of the bean
 	 * @throws BeansException if the bean could not be created
@@ -244,10 +251,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		    从缓存（一级二级三级缓存依次获取，获取到就返回）中获取单例实例，如果获取到并且是无参构造函数，则将bean变量的值赋值。
 		 */
 		// Eagerly check singleton cache for manually registered singletons.
+		// 主动检查单例缓存是否有手动注册的单例。
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
-				if (isSingletonCurrentlyInCreation(beanName)) {
+				//返回未完全初始化的热切缓存的单例bean实例——循环引用的结果  此时的bean并没有完全初始化，只是进行了0值初始化，开辟了内存空间
+				//对象以及放置在了堆内存中，差最后一步，为了解决循环应用的依赖情况
+				if (isSingletonCurrentlyInCreation(beanName)) { //是Singleton目前在创建
 					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
 							"' that is not fully initialized yet - a consequence of a circular reference");
 				} else {
@@ -258,6 +268,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// 否则将bean强转为FactoryBean类型，并调用getObject()方法返回。
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		} else {
+
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
 			// 多例不支持循环引用。多例时，如果返回指定的原型bean是否正在创建中，则抛出异常。
@@ -292,10 +303,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			try {
+				// 获取bean定义对象
 				final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// 未知作用  只是检查是否是抽象的？
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				// 保障当前bean的依赖对象已经被初始化
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
@@ -318,11 +332,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				    单例实例第一次创建bean入口，这里的getSingleton方法中，调用了参数中匿名对象的getObject()
 				    在bean创建完成后，将bean放入到一级缓存，并从二三级缓存中移除:addSingleton(beanName, singletonObject);
 				 */
-				// Create bean instance.
+				// Create bean instance.  单例对象的处理方式
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
-							//创建Bean实例
+							//创建Bean实例  同时进行后置初始化过程
 							return createBean(beanName, mbd, args);
 						} catch (BeansException ex) {
 							// Explicitly remove instance from singleton cache: It might have been put there
@@ -394,6 +408,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Check if required type matches the type of the actual bean instance.
+		// 检查类型是否匹配
 		if (requiredType != null && !requiredType.isInstance(bean)) {
 			try {
 				T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
@@ -1052,6 +1067,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 *
 	 * @param beanName the name of the prototype about to be created
 	 * @see #isPrototypeCurrentlyInCreation
+	 * 在原型创建  将该bean放入正在创建的bean名字集合中
 	 */
 	@SuppressWarnings("unchecked")
 	protected void beforePrototypeCreation(String beanName) {
@@ -1075,6 +1091,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 *
 	 * @param beanName the name of the prototype that has been created
 	 * @see #isPrototypeCurrentlyInCreation
+	 * bean创建完毕 从正在创建集合中移除
 	 */
 	@SuppressWarnings("unchecked")
 	protected void afterPrototypeCreation(String beanName) {
@@ -1215,6 +1232,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 
 	/**
+	 * 返回一个合并的RootBeanDefinition，遍历父bean定义
 	 * Return a merged RootBeanDefinition, traversing the parent bean definition
 	 * if the specified bean corresponds to a child bean definition.
 	 *

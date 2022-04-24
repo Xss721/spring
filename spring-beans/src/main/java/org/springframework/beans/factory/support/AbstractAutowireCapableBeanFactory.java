@@ -410,6 +410,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * Central method of this class: creates a bean instance,
 	 * populates the bean instance, applies post-processors, etc.
 	 * @see #doCreateBean
+	 * 创建bean的主要方法，会创建一个bean的实例对象
 	 */
 	@Override
 	protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
@@ -439,6 +440,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// bean的前置初始化过程
 			// 这里如果满足条件，会调用 InstantiationAwareBeanPostProcessor.postProcessBeforeInstantiation()和
 			// BeanPostProcessor.postProcessAfterInitialization()，直接返回。
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
